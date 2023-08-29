@@ -2,10 +2,7 @@ package com.application.nothing.model;
 
 import jakarta.persistence.*;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.Objects;
 
 @Entity
 @Table(name = "Users")

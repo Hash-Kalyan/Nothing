@@ -1,9 +1,12 @@
 package com.application.nothing.service;
 
+import com.application.nothing.exception.UserAlreadyExistsException;
+import com.application.nothing.model.Product;
 import com.application.nothing.repository.UserRepository;
 import com.application.nothing.model.User;
 import com.application.nothing.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -31,13 +34,37 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
+        return Optional.ofNullable(userRepository.findById(id).orElseThrow(() ->
+                new UserNotFoundException("NO USER PRESENT WITH ID = " + id)));
     }
 
     @Transactional
-    public User createNewUser(User user) {
-        System.out.println("user created");
-        return userRepository.save(user);
+    public String createNewUser(User user) {
+        try {
+            userRepository.save(user);
+            return "User added successfully";
+        } catch (DataIntegrityViolationException ex) {
+            throw new UserAlreadyExistsException("Customer already exixts!!");
+            // Handle the unique constraint violation, e.g., return an error message to the user
+
+        }
+
+    }
+
+    @Transactional
+    public String updateUser(User user) {
+        userRepository.findById(user.getUserId()).orElseThrow(() ->
+                new UserNotFoundException("NO USER PRESENT WITH ID = " + user.getUserId()));
+
+        try {
+            userRepository.save(user);
+            return "User updated successfully";
+        } catch (DataIntegrityViolationException ex) {
+            throw new UserAlreadyExistsException("Customer already exixts!!");
+            // Handle the unique constraint violation, e.g., return an error message to the user
+
+        }
+
     }
 
     @Transactional
