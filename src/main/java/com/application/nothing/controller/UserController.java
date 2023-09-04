@@ -1,13 +1,9 @@
 package com.application.nothing.controller;
 
-import com.application.nothing.exception.*;
-import com.application.nothing.model.Product;
 import com.application.nothing.model.User;
 import com.application.nothing.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,29 +37,18 @@ public class UserController {
 
     // Create new user
     @PostMapping("/create")
-    public ResponseEntity<String> createUser(@RequestBody User user, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            // Handle validation errors, return appropriate response
-            throw new UserAlreadyExistsException("Either UserID or Email or Phone already exist!");
-        }
-
+    public ResponseEntity<ResponseEntity<String>> createUser(@RequestBody User user) {
         System.out.println("requesting to create user");
         return ResponseEntity.ok(userService.createNewUser(user));
     }
 
+
     // Update user
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<ResponseEntity<String>> updateUser(@RequestBody User user) {
         // You might want to do some checks or modifications here before saving
-        return ResponseEntity.ok(userService.updateUser(user));}
-        @ExceptionHandler(value= UserAlreadyExistsException.class)
-        @ResponseStatus(HttpStatus.CONFLICT)
-        public ErrorResponse handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
-            return new ErrorResponse(HttpStatus.CONFLICT.value(),ex.getMessage());
+        return ResponseEntity.ok(userService.updateUser(user));
     }
-
-
-
 
     // Delete user
     @DeleteMapping("/{id}")
