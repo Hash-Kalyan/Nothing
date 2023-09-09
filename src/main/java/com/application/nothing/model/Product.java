@@ -2,10 +2,9 @@ package com.application.nothing.model;
 
 import jakarta.persistence.*;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
+
 @Entity
 @Table(name = "Products")
 public class Product {
@@ -15,12 +14,18 @@ public class Product {
     @Column(name = "product_id")
     private Long productId;
 
-    @Column(nullable = false)
+   // @Column(name = "name", nullable = false)
+   @Column(nullable = false)
     private String name;
+    //@Column(name = "description", nullable = false)
+    @Column(nullable = false)
     private String description;
+    //@Column(name = "price", nullable = false)
+    @Column(nullable = false)
     private Double price;
 
-    @Column(name = "stock_quantity", nullable = false)
+    //@Column(name = "stock_quantity", nullable = false)
+    @Column(nullable = false)
     private Integer stockQuantity;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -45,15 +45,19 @@ public class UserController {
 
     // Update user
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseEntity<String>> updateUser(@RequestBody User user) {
+    public ResponseEntity<ResponseEntity<String>> updateUser(@PathVariable Long id, @RequestBody User user) {
+        user.setUserId(id);
         // You might want to do some checks or modifications here before saving
         return ResponseEntity.ok(userService.updateUser(user));
     }
 
     // Delete user
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteById(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ResponseEntity<String>> deleteUser(@PathVariable Long id) {
+//        userService.deleteById(id);
+//        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(userService.deleteById(id));
     }
 }
+
+

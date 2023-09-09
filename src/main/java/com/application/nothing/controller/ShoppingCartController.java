@@ -1,6 +1,7 @@
 package com.application.nothing.controller;
 
 import com.application.nothing.model.ShoppingCart;
+import com.application.nothing.model.User;
 import com.application.nothing.service.ShoppingCartService;
 import com.application.nothing.exception.ShoppingCartNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,19 +34,21 @@ public class ShoppingCartController {
     }
 
     @PostMapping
-    public ResponseEntity<ShoppingCart> createShoppingCart(@RequestBody ShoppingCart shoppingCart) {
-        return ResponseEntity.ok(shoppingCartService.save(shoppingCart));
+    public ResponseEntity<ResponseEntity<String>> createShoppingCart(@RequestBody ShoppingCart shoppingCart) {
+        return ResponseEntity.ok(shoppingCartService.createNewShoppingCart(shoppingCart));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShoppingCart> updateShoppingCart(@PathVariable Long id, @RequestBody ShoppingCart shoppingCart) {
+    public ResponseEntity<ResponseEntity<String>> updateShoppingCart(@PathVariable Long id, @RequestBody ShoppingCart shoppingCart) {
         shoppingCart.setCartId(id);
-        return ResponseEntity.ok(shoppingCartService.save(shoppingCart));
+        return ResponseEntity.ok(shoppingCartService.updateShoppingCart(shoppingCart));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteShoppingCart(@PathVariable Long id) {
-        shoppingCartService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ResponseEntity<String>> deleteShoppingCart(@PathVariable Long id) {
+//        shoppingCartService.deleteById(id);
+//        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(shoppingCartService.deleteById(id));
+
     }
 }

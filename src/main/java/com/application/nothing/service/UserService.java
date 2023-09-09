@@ -1,6 +1,5 @@
 package com.application.nothing.service;
 
-import com.application.nothing.exception.UserAlreadyExistsException;
 import com.application.nothing.model.User;
 import com.application.nothing.exception.UserNotFoundException;
 import com.application.nothing.repository.UserRepository;
@@ -84,7 +83,7 @@ public class UserService {
             return ResponseEntity.ok("User updated successfully.");
 
         } catch (DataIntegrityViolationException ex) {
-            throw new UserAlreadyExistsException("Error updating user.!!");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating user.!!");
             // Handle the unique constraint violation, e.g., return an error message to the user
 
         }
@@ -92,8 +91,19 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteById(Long id) {
-        userRepository.deleteById(id);
+    public ResponseEntity<String> deleteById(Long id) {
+        userRepository.findById(id).orElseThrow(() ->
+                new UserNotFoundException("NO USER PRESENT WITH ID = " + id));
+        try {
+            userRepository.deleteById(id);
+            return ResponseEntity.ok("User deleted successfully.");
+
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting user.!!");
+            // Handle the unique constraint violation, e.g., return an error message to the user
+
+        }
+
     }
 
 
