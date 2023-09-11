@@ -1,11 +1,18 @@
 package com.application.nothing.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 
 import java.util.Date;
-import java.util.Objects;
+
 
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "Products")
 public class Product {
 
@@ -41,112 +48,7 @@ public class Product {
 
     // Getters, Setters, Constructors, equals, hashCode, and toString methods
 // Constructors
-    public Product() {}
 
-    public Product(Long productId, String name, String description, Double price, Integer stockQuantity, Category category, String imageUrl, Date createdAt) {
-        this.productId = productId;
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.stockQuantity = stockQuantity;
-        this.category = category;
-        this.imageUrl = imageUrl;
-        this.createdAt = createdAt;
-    }
-
-    // Getters and setters
-
-
-    public Long getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Long productId) {
-        this.productId = productId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Double getPrice() {
-        return price;
-    }
-
-    public void setPrice(Double price) {
-        this.price = price;
-    }
-
-    public Integer getStockQuantity() {
-        return stockQuantity;
-    }
-
-    public void setStockQuantity(Integer stockQuantity) {
-        this.stockQuantity = stockQuantity;
-    }
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public void setCategory(Category category) {
-        this.category = category;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Product product = (Product) o;
-        return Objects.equals(productId, product.productId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(productId);
-    }
-
-    @Override
-    public String toString() {
-        return "Product{" +
-                "productId=" + productId +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", price=" + price +
-                ", stockQuantity=" + stockQuantity +
-                ", category=" + category +
-                ", imageUrl='" + imageUrl + '\'' +
-                ", createdAt=" + createdAt +
-                '}';
-    }
 }
 
 

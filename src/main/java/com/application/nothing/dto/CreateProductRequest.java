@@ -1,7 +1,13 @@
-package com.application.nothing.model.dto;
+package com.application.nothing.dto;
 
 import com.application.nothing.model.Product;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CreateProductRequest {
 
     private Product product;

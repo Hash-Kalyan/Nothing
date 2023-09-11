@@ -1,11 +1,25 @@
 package com.application.nothing.model;
 
-import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import jakarta.persistence.*;
+
+
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "ShoppingCart")
 public class ShoppingCart {
 
+    // Getters and setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "cart_id")
@@ -15,52 +29,8 @@ public class ShoppingCart {
     @JoinColumn(name = "user_id")
     private User user;
 
-    // Getters, Setters, Constructors, equals, hashCode, and toString methods
-    // Constructors
-    public ShoppingCart() {}
-
-    public ShoppingCart(User user) {
-        this.user = user;
-    }
-
-    // Getters and setters
-    public Long getCartId() {
-        return cartId;
-    }
-
-    public void setCartId(Long cartId) {
-        this.cartId = cartId;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    // equals, hashCode, and toString
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ShoppingCart that = (ShoppingCart) o;
-        return Objects.equals(cartId, that.cartId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cartId);
-    }
-
-    @Override
-    public String toString() {
-        return "ShoppingCart{" +
-                "cartId=" + cartId +
-                ", user=" + user +
-                '}';
-    }
+    @OneToMany(mappedBy = "shoppingCart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> items = new ArrayList<>();
 
 }
 

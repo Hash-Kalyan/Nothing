@@ -80,7 +80,7 @@ public class ProductService {
 @Transactional
 public ResponseEntity<String> createNewProduct(Product product, Long categoryId) {
     try {
-        if (productRepository.findByname(product.getName()) != null) {
+        if (productRepository.findByName(product.getName()) != null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Product already exists.");
         }
 
@@ -117,7 +117,7 @@ public ResponseEntity<String> createNewProduct(Product product, Long categoryId)
 
     public List<Product> findByCategoryId(Long categoryId) {
         try {
-            return productRepository.findAllByCategory_CategoryId(categoryId);
+            return productRepository.findAllByCategoryId(categoryId);
 //        } catch (DataIntegrityViolationException ex) {
 //            return (List<Product>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error in finding Products by catagory.");
         } catch (DataIntegrityViolationException ex) {
@@ -125,9 +125,11 @@ public ResponseEntity<String> createNewProduct(Product product, Long categoryId)
             ex.printStackTrace();
             return Collections.emptyList();
 
-
         }
 
+    }
 
+    public Optional<Product> findEntityById(Long id) {
+        return productRepository.findById(id);
     }
 }

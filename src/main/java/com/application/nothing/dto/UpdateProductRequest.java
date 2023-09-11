@@ -1,4 +1,4 @@
-package com.application.nothing.model.dto;
+package com.application.nothing.dto;
 
 import com.application.nothing.model.Product;
 

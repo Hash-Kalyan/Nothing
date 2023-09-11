@@ -1,9 +1,16 @@
 package com.application.nothing.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
-import java.util.Objects;
+
 @Entity
-@Table(name = "CartItems")
+@Table(name = "cart_items")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CartItem {
 
     @Id
@@ -24,69 +31,7 @@ public class CartItem {
 
     // Getters, Setters, Constructors, equals, hashCode, and toString methods
     // Constructors
-    public CartItem() {}
 
-    public CartItem(ShoppingCart shoppingCart, Product product, Integer quantity) {
-        this.shoppingCart = shoppingCart;
-        this.product = product;
-        this.quantity = quantity;
-    }
 
-    // Getters and setters
-    public Long getCartItemId() {
-        return cartItemId;
-    }
-
-    public void setCartItemId(Long cartItemId) {
-        this.cartItemId = cartItemId;
-    }
-
-    public ShoppingCart getShoppingCart() {
-        return shoppingCart;
-    }
-
-    public void setShoppingCart(ShoppingCart shoppingCart) {
-        this.shoppingCart = shoppingCart;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    // equals, hashCode, and toString
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CartItem cartItem = (CartItem) o;
-        return Objects.equals(cartItemId, cartItem.cartItemId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cartItemId);
-    }
-
-    @Override
-    public String toString() {
-        return "CartItem{" +
-                "cartItemId=" + cartItemId +
-                ", shoppingCart=" + shoppingCart +
-                ", product=" + product +
-                ", quantity=" + quantity +
-                '}';
-    }
 }
 

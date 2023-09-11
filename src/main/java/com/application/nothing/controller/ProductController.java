@@ -1,11 +1,9 @@
 package com.application.nothing.controller;
 
-import com.application.nothing.model.dto.CreateProductRequest;
+import com.application.nothing.dto.CreateProductRequest;
 import com.application.nothing.model.Product;
-import com.application.nothing.model.User;
-import com.application.nothing.model.dto.UpdateProductRequest;
+import com.application.nothing.dto.UpdateProductRequest;
 import com.application.nothing.service.ProductService;
-import com.application.nothing.exception.ProductNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
