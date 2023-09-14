@@ -1,7 +1,10 @@
 package com.application.nothing.controller;
 
+import com.application.nothing.dto.UserDTO;
+import com.application.nothing.exception.UserNotFoundException;
 import com.application.nothing.model.User;
 import com.application.nothing.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,39 +27,37 @@ public class UserController {
 
     // Get all users
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.findAll());
     }
 
     // Get user by ID
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        Optional<User> userOptional = userService.findById(id);
-        return userOptional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        return userService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
 
     // Create new user
     @PostMapping("/create")
-    public ResponseEntity<ResponseEntity<String>> createUser(@RequestBody User user) {
-        System.out.println("requesting to create user");
-        return ResponseEntity.ok(userService.createNewUser(user));
+    public ResponseEntity<UserDTO> createUser(@RequestBody @Valid UserDTO userDTO) {
+        return ResponseEntity.ok(userService.save(userDTO));
     }
 
 
     // Update user
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseEntity<String>> updateUser(@PathVariable Long id, @RequestBody User user) {
-        user.setUserId(id);
-        // You might want to do some checks or modifications here before saving
-        return ResponseEntity.ok(userService.updateUser(user));
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody @Valid UserDTO userDTO) {
+        userDTO.setUserId(id); // Set the user ID from path variable to DTO
+        return ResponseEntity.ok(userService.save(userDTO));
     }
 
     // Delete user
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseEntity<String>> deleteUser(@PathVariable Long id) {
-//        userService.deleteById(id);
-//        return ResponseEntity.ok().build();
-        return ResponseEntity.ok(userService.deleteById(id));
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
 

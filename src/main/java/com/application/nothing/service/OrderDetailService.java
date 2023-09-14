@@ -1,9 +1,13 @@
 package com.application.nothing.service;
 
+import com.application.nothing.dto.CategoryDTO;
 import com.application.nothing.dto.OrderDetailDTO;
+import com.application.nothing.dto.ProductDTO;
+import com.application.nothing.exception.CategoryNotFoundException;
 import com.application.nothing.exception.OrderDetailNotFoundException;
 import com.application.nothing.exception.OrderNotFoundException;
 import com.application.nothing.exception.ProductNotFoundException;
+import com.application.nothing.model.Category;
 import com.application.nothing.model.Order;
 import com.application.nothing.model.OrderDetail;
 import com.application.nothing.model.Product;
@@ -30,6 +34,9 @@ public class OrderDetailService {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     public Optional<OrderDetailDTO> findByOrderIdAndProductId(Long orderId, Long productId) {
         return orderDetailRepository.findByOrder_orderIdAndProduct_productId(orderId, productId)
@@ -126,6 +133,20 @@ public class OrderDetailService {
 //        return orderDetail;
 //    }
 
+//    private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
+//        OrderDetail orderDetail = new OrderDetail();
+//        orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
+//
+//        orderDetail.setOrder(orderService.findEntityById(orderDetailDTO.getOrderId())
+//                .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderDetailDTO.getOrderId() + " not found")));
+//
+//        orderDetail.setProduct(productService.getProductById(orderDetailDTO.getProductId())
+//                .orElseThrow(() -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found")));
+//
+//        orderDetail.setQuantity(orderDetailDTO.getQuantity());
+//        orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
+//        return orderDetail;
+//    }
     private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
         OrderDetail orderDetail = new OrderDetail();
         orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
@@ -133,12 +154,33 @@ public class OrderDetailService {
         orderDetail.setOrder(orderService.findEntityById(orderDetailDTO.getOrderId())
                 .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderDetailDTO.getOrderId() + " not found")));
 
-        orderDetail.setProduct(productService.findEntityById(orderDetailDTO.getProductId())
-                .orElseThrow(() -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found")));
+        ProductDTO productDTO = productService.getProductById(orderDetailDTO.getProductId())
+                .orElseThrow(() -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found"));
+
+        Product product = new Product();
+        product.setProductId(productDTO.getProductId());
+        product.setName(productDTO.getName());
+        product.setDescription(productDTO.getDescription());
+        Long categoryId = productDTO.getCategoryId();
+        if (categoryId != null) {
+            Category category = categoryService.findById(categoryId)
+                    .map(this::convertToCategoryEntity) // Assuming you have a method to convert CategoryDTO to Category entity
+                    .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + categoryId + " not found"));
+            product.setCategory(category);
+        }
+        // Set other fields from ProductDTO to Product entity...
+
+        orderDetail.setProduct(product);
 
         orderDetail.setQuantity(orderDetailDTO.getQuantity());
         orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
         return orderDetail;
+    }
+    private Category convertToCategoryEntity(CategoryDTO categoryDTO) {
+        Category category = new Category();
+        category.setCategoryId(categoryDTO.getCategoryId());
+        category.setCategoryName(categoryDTO.getCategoryName());
+        return category;
     }
 
 

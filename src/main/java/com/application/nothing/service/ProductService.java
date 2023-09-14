@@ -1,135 +1,242 @@
 package com.application.nothing.service;
 
-import com.application.nothing.exception.CategoryNotFoundException;
-import com.application.nothing.exception.ShoppingCartNotFoundException;
-import com.application.nothing.model.Category;
-import com.application.nothing.repository.CategoryRepository;
-import com.application.nothing.repository.ProductRepository;
-import com.application.nothing.model.Product;
+import com.application.nothing.dto.CategoryDTO;
+import com.application.nothing.dto.ProductDTO;
+import com.application.nothing.exception.ProductAlreadyExistsException;
 import com.application.nothing.exception.ProductNotFoundException;
+import com.application.nothing.model.Category;
+import com.application.nothing.model.Product;
+import com.application.nothing.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
-
     @Autowired
     private ProductRepository productRepository;
 
+    private final CategoryService categoryService;
+
     @Autowired
-    private CategoryRepository categoryRepository;
-
-    @Transactional(readOnly = true)
-    public List<Product> findAll() {
-        return productRepository.findAll();
+    public ProductService(CategoryService categoryService) {
+        this.categoryService = categoryService;
     }
 
     @Transactional(readOnly = true)
-    public Optional<Product> findById(Long id) {
-        return Optional.ofNullable(productRepository.findById(id).orElseThrow(() ->
-                new ProductNotFoundException("NO Product PRESENT WITH ID = " + id)));
+    public List<ProductDTO> getAllProducts() {
+        List<Product> products = productRepository.findAll();
+        return products.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
-//    @Transactional
-//    public ResponseEntity<String> updateProduct(Product product) {
-//        productRepository.findById(product.getProductId()).orElseThrow(() ->
-//                new ProductNotFoundException("NO Product PRESENT WITH ID = " + product.getProductId()));
-//        try {
-//            productRepository.save(product);
-//            return ResponseEntity.ok("Product updated successfully.");
-//        } catch (DataIntegrityViolationException ex) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating Product.");
-//        }
-//    }
+    @Transactional(readOnly = true)
+    public Optional<ProductDTO> getProductById(Long id) {
+        Optional<Product> product = productRepository.findById(id);
+        return product.map(this::convertToDto);
+    }
 
     @Transactional
-    public ResponseEntity<String> updateProduct(Long id, Product productDetails, Long categoryId) {
-        try {
-            Product product = productRepository.findById(id)
-                    .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+    public ProductDTO createProduct(ProductDTO productDTO, CategoryDTO categoryDTO) {
+        if (productRepository.existsByName(productDTO.getName())) {
+            throw new ProductAlreadyExistsException("Product already exists with name: " + productDTO.getName());
+        }
 
-            Category category = categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new ProductNotFoundException("Category not found with ID: " + categoryId));
+        Product product = convertToEntity(productDTO, categoryDTO);
+        Product savedProduct = productRepository.save(product);
+        return convertToDto(savedProduct);
+    }
 
-            product.setName(productDetails.getName());
-            product.setDescription(productDetails.getDescription());
-            //... (set other fields as necessary)
+    @Transactional
+    public ProductDTO updateProduct(Long id, ProductDTO productDTO, CategoryDTO categoryDTO) {
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+
+        updateProductProperties(existingProduct, productDTO, categoryDTO);
+        productDTO.setProductId(id);
+        Product updatedProduct = productRepository.save(convertToEntity(productDTO, categoryDTO));
+        return convertToDto(updatedProduct);
+    }
+
+
+    private void updateProductProperties(Product product, ProductDTO productDTO, CategoryDTO categoryDTO) {
+        product.setName(productDTO.getName());
+        product.setDescription(productDTO.getDescription());
+        product.setPrice(productDTO.getPrice());
+
+        // Update other properties of the product
+
+        if (categoryDTO != null) {
+            Category category = convertCategoryDTOToCategory(categoryDTO);
             product.setCategory(category);
-
-            productRepository.save(product);
-            return ResponseEntity.ok("Product updated successfully.");
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating product.");
         }
     }
 
-
-    //
-@Transactional
-public ResponseEntity<String> createNewProduct(Product product, Long categoryId) {
-    try {
-        if (productRepository.findByName(product.getName()) != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Product already exists.");
-        }
-
-        // Fetch the category from the database using the category ID
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new CategoryNotFoundException("NO Category PRESENT WITH ID = " + categoryId));
-
-        // Set the category on the product object
-        product.setCategory(category);
-
-        productRepository.save(product);
-        return ResponseEntity.ok("Product created successfully.");
-    } catch (DataIntegrityViolationException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating Product.");
+    private Category convertCategoryDTOToCategory(CategoryDTO categoryDTO) {
+        Category category = new Category();
+        category.setCategoryId(categoryDTO.getCategoryId());
+        // Map other properties from CategoryDTO to Category
+        return category;
     }
-}
-
 
     @Transactional
-    public ResponseEntity<String> deleteById(Long id) {
-        productRepository.findById(id).orElseThrow(() ->
-                new ShoppingCartNotFoundException("NO Product PRESENT WITH ID = " + id));
-        try {
-            productRepository.deleteById(id);
-            return ResponseEntity.ok("Product deleted successfully.");
-
-        } catch (DataIntegrityViolationException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting Product.!!");
-            // Handle the unique constraint violation, e.g., return an error message to the user
-
+    public void deleteById(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ProductNotFoundException("Product not found with ID: " + id);
         }
-
+        productRepository.deleteById(id);
     }
 
-    public List<Product> findByCategoryId(Long categoryId) {
-        try {
-            return productRepository.findAllByCategoryId(categoryId);
-//        } catch (DataIntegrityViolationException ex) {
-//            return (List<Product>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error in finding Products by catagory.");
-        } catch (DataIntegrityViolationException ex) {
-            System.err.println("Error in finding Products by category.");
-            ex.printStackTrace();
-            return Collections.emptyList();
-
-        }
-
+    @Transactional(readOnly = true)
+    public List<ProductDTO> findByCategoryId(Long categoryId) {
+        List<Product> products = productRepository.findByCategory_categoryId(categoryId);
+        return products.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Product> findEntityById(Long id) {
-        return productRepository.findById(id);
+    private Product convertToEntity(ProductDTO productDTO, CategoryDTO categoryDTO) {
+        Product product = new Product();
+        product.setProductId(productDTO.getProductId());
+        product.setName(productDTO.getName());
+        product.setDescription(productDTO.getDescription());
+        product.setPrice(productDTO.getPrice());
+
+        if (categoryDTO != null) {
+            Category category = new Category();
+            category.setCategoryId(categoryDTO.getCategoryId());
+            // Map other properties from CategoryDTO to Category
+            product.setCategory(category);
+        }
+
+        return product;
+    }
+
+
+    private ProductDTO convertToDto(Product product) {
+        ProductDTO productDTO = new ProductDTO();
+        productDTO.setProductId(product.getProductId());
+        productDTO.setName(product.getName());
+        productDTO.setDescription(product.getDescription());
+        productDTO.setPrice(product.getPrice());
+        productDTO.setCategoryId(product.getCategory().getCategoryId());
+        return productDTO;
+    }
+
+    public List<ProductDTO> findByProductName(String name) {
+        List<Product> products = productRepository.findByName(name);
+        return products.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private ProductDTO convertToDTO(Product product) {
+        ProductDTO productDTO = new ProductDTO();
+        productDTO.setProductId(product.getProductId());
+        productDTO.setName(product.getName());
+        productDTO.setDescription(product.getDescription());
+        productDTO.setPrice(product.getPrice());
+        productDTO.setCreatedDate(product.getCreatedAt());
+        //    productDTO.setLastUpdatedDate(product.getLastUpdatedDate());
+        productDTO.setCategoryId(product.getCategory().getCategoryId());
+        return productDTO;
+
     }
 }
+
+
+//package com.application.nothing.service;
+//
+//import com.application.nothing.dto.ProductDTO;
+//import com.application.nothing.exception.ProductAlreadyExistsException;
+//import com.application.nothing.exception.ProductNotFoundException;
+//import com.application.nothing.model.Category;
+//import com.application.nothing.model.Product;
+//import com.application.nothing.repository.ProductRepository;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.http.ResponseEntity;
+//import org.springframework.stereotype.Service;
+//
+//import java.util.List;
+//import java.util.Optional;
+//import java.util.stream.Collectors;
+//
+//@Service
+//public class ProductService {
+//
+//    @Autowired
+//    private ProductRepository productRepository;
+//
+//    // Other service methods here...
+//
+//    public List<ProductDTO> getAllProducts() {
+//        List<Product> products = productRepository.findAll();
+//        return products.stream()
+//                .map(this::convertToDto)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public Optional<ProductDTO> getProductById(Long id) {
+//        Optional<Product> product = productRepository.findById(id);
+//        return product.map(this::convertToDto);
+//    }
+//
+//    public ProductDTO createNewProduct(ProductDTO productDTO) {
+//        if (productRepository.existsByName(productDTO.getName())) {
+//            throw new ProductAlreadyExistsException("Product already exists with name: " + productDTO.getName());
+//        }
+//        Product product = convertToEntity(productDTO);
+//        Product savedProduct = productRepository.save(product);
+//        return convertToDto(savedProduct);
+//    }
+//
+//    public ProductDTO updateProduct(ProductDTO productDTO) {
+//        Product product = convertToEntity(productDTO);
+//        Product updatedProduct = productRepository.save(product);
+//        return convertToDto(updatedProduct);
+//    }
+//
+//    public ResponseEntity<Void> deleteById(Long id) {
+//        if (!productRepository.existsById(id)) {
+//            throw new ProductNotFoundException("Product not found with ID: " + id);
+//        }
+//        productRepository.deleteById(id);
+//    }
+//
+//    public List<ProductDTO> findByCategoryId(Long categoryId) {
+//        List<Product> products = productRepository.findByCategory_categoryId(categoryId);
+//        return products.stream()
+//                .map(this::convertToDto)
+//                .collect(Collectors.toList());
+//    }
+//
+//    private Product convertToEntity(ProductDTO productDTO) {
+//        Product product = new Product();
+//        product.setProductId(productDTO.getProductId());
+//        product.setName(productDTO.getName());
+//        product.setDescription(productDTO.getDescription());
+//        product.setPrice(productDTO.getPrice());
+//        Category category = CategoryService.findById(productDTO.getCategoryId()).orElse(null);
+//        product.setCategory(category);
+//        return product;
+//    }
+//
+//    private ProductDTO convertToDto(Product product) {
+//        ProductDTO productDTO = new ProductDTO();
+//        productDTO.setProductId(product.getProductId());
+//        productDTO.setName(product.getName());
+//        productDTO.setDescription(product.getDescription());
+//        productDTO.setPrice(product.getPrice());
+//        productDTO.setCategoryId(product.getCategory().getCategoryId());
+//        return productDTO;
+//    }
+//
+//}
+

@@ -26,11 +26,16 @@ public class ShoppingCart {
     private Long cartId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", unique = true)
     private User user;
 
     @OneToMany(mappedBy = "shoppingCart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
+    public void setCreatedDate(LocalDateTime now) {
+    }
+
+    public void setStatus(String aNew) {
+    }
 }
 
