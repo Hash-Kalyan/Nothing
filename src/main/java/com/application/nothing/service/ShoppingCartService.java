@@ -3,14 +3,19 @@ package com.application.nothing.service;
 import com.application.nothing.dto.*;
 import com.application.nothing.exception.ShoppingCartAlreadyExistsException;
 import com.application.nothing.exception.ShoppingCartNotFoundException;
-import com.application.nothing.exception.UserNotFoundException;
+import com.application.nothing.exception.CartItemNotFoundException;
 import com.application.nothing.model.CartItem;
 import com.application.nothing.model.ShoppingCart;
 import com.application.nothing.model.User;
 import com.application.nothing.repository.ShoppingCartRepository;
+import com.application.nothing.repository.CartItemRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +26,12 @@ public class ShoppingCartService {
 
     @Autowired
     private ShoppingCartRepository shoppingCartRepository;
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private UserService userService;
@@ -35,139 +46,87 @@ public class ShoppingCartService {
         this.cartItemService = cartItemService;
     }
 
-    public List<ShoppingCartDTO> findAll() {
-        return shoppingCartRepository.findAll().stream()
-                .map(this::convertEntityToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public Optional<ShoppingCartDTO> getShoppingCart(Long cartId) {
-        ShoppingCart shoppingCart = shoppingCartRepository.findById(cartId)
-                .orElseThrow(() -> new ShoppingCartNotFoundException("Shopping Cart not found with ID: " + cartId));
-        return Optional.ofNullable(convertEntityToDTO(shoppingCart));
-    }
-
-    public void checkIfCartExists(Long userId) {
-        if (shoppingCartRepository.existsByuser_userId(userId)) {
-            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
-        }
-    }
-
-//    public ShoppingCartDTO createNewShoppingCart(Long userId, ShoppingCartDTO shoppingCartDTO) {
-//        // Check if a shopping cart already exists for the given user ID
-//        if (shoppingCartRepository.existsByuser_userId(userId)) {
-//            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
-//        }
+//  this code has been moved to project config -> BeanConfig
+//    @Configuration
+//    public static class AppConfig {
 //
-//        ShoppingCart shoppingCart = convertDTOToEntity(shoppingCartDTO);
-//        shoppingCart.setUser(userService.findById(userId));
-//        ShoppingCart savedShoppingCart = shoppingCartRepository.save(shoppingCart);
-//        return convertEntityToDTO(savedShoppingCart);
-//    }
-//
-//    public void checkIfCartExists(Long userId) {
-//        if (shoppingCartRepository.existsByuser_userId(userId)) {
-//            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
+//        @Bean
+//        public ModelMapper modelMapper() {
+//            return new ModelMapper();
 //        }
 //    }
 
-    public ShoppingCartDTO createNewShoppingCart(Long userId, ShoppingCartDTO shoppingCartDTO) {
-        // Check if a shopping cart already exists for the given user ID
-        if (shoppingCartRepository.existsByuser_userId(userId)) {
-            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
-        }
 
-        ShoppingCart shoppingCart = convertDTOToEntity(shoppingCartDTO);
-        userService.findById(userId).ifPresent(userDTO -> {
-            User user = userService.convertDTOToEntity(userDTO);
-            shoppingCart.setUser(user);
-        });
+    public ShoppingCartDTO createShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+        ShoppingCart shoppingCart = convertToEntity(shoppingCartDTO);
         ShoppingCart savedShoppingCart = shoppingCartRepository.save(shoppingCart);
-        return convertEntityToDTO(savedShoppingCart);
+        return convertToDto(savedShoppingCart);
     }
 
-    public ShoppingCartDTO addItemToCart(CreateCartItemRequest createCartItemRequest) {
-        // Logic for adding item to cart
-        // ...
-        return null; // Replace with actual implementation
+    public Optional<ShoppingCartDTO> findById(Long cartId) {
+        return shoppingCartRepository.findById(cartId).map(this::convertToDto);
     }
 
-    public ShoppingCartDTO removeItemFromCart(RemoveCartItemRequest removeCartItemRequest) {
-        // Logic for removing item from cart
-        // ...
-        return null; // Replace with actual implementation
+    public ShoppingCartDTO updateShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+        ShoppingCart shoppingCart = convertToEntity(shoppingCartDTO);
+        ShoppingCart updatedShoppingCart = shoppingCartRepository.save(shoppingCart);
+        return convertToDto(updatedShoppingCart);
     }
 
-    public ShoppingCartDTO updateShoppingCart(UpdateShoppingCartRequest updateShoppingCartRequest) {
-        // Logic for updating shopping cart
-        // ...
-        return null; // Replace with actual implementation
+    public ShoppingCartDTO addItemToCart(Long cartId, CartItemDTO cartItemDTO) {
+        ShoppingCart shoppingCart = shoppingCartRepository.findById(cartId)
+                .orElseThrow(() -> new ShoppingCartNotFoundException("Shopping cart not found"));
+
+        CartItem cartItem = modelMapper.map(cartItemDTO, CartItem.class);
+        shoppingCart.addCartItem(cartItem);
+
+        ShoppingCart updatedShoppingCart = shoppingCartRepository.save(shoppingCart);
+        return convertToDto(updatedShoppingCart);
     }
 
-    public ShoppingCartDTO convertEntityToDTO(ShoppingCart shoppingCart) {
-        ShoppingCartDTO shoppingCartDTO = new ShoppingCartDTO();
-        shoppingCartDTO.setCartId(shoppingCart.getCartId());
-        shoppingCartDTO.setUserId(shoppingCart.getUser().getUserId());
-        shoppingCartDTO.setItems(cartItemService.convertCartItemsToDTOs(shoppingCart.getItems()));
-        return shoppingCartDTO;
+    public void removeItemFromCart(Long cartId, Long itemId) {
+        ShoppingCart shoppingCart = shoppingCartRepository.findById(cartId)
+                .orElseThrow(() -> new ShoppingCartNotFoundException("Shopping cart not found"));
+
+        CartItem cartItem = cartItemRepository.findById(itemId)
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
+
+        shoppingCart.removeCartItem(cartItem);
+        shoppingCartRepository.save(shoppingCart);
     }
 
-//    public ShoppingCart convertDTOToEntity(ShoppingCartDTO shoppingCartDTO) {
-//        ShoppingCart shoppingCart = new ShoppingCart();
-//        shoppingCart.setCartId(shoppingCartDTO.getCartId());
-//
-//        // Set user entity from UserDTO
-//        Optional<UserDTO> userDTOOptional = userService.findById(shoppingCartDTO.getUserId());
-//        if (userDTOOptional.isPresent()) {
-//            UserDTO userDTO = userDTOOptional.get();
-//            User user = userService.convertDTOToEntity(userDTO);
-//            shoppingCart.setUser(user);
-//
-//        } else {
-//            throw new UserNotFoundException("User not found with ID: " + shoppingCartDTO.getUserId());
-//        }
-//        // Set cart items from CartItemDTO list
-//        List<CartItem> cartItems = shoppingCartDTO.getItems().stream()
-//                .map(cartItemService::convertDTOToCartItem)
-//                .collect(Collectors.toList());
-//        shoppingCart.setItems(cartItems);
-//
-//        return shoppingCart;
-//    }
+    public ShoppingCartDTO checkoutCart(Long cartId) {
+        ShoppingCart shoppingCart = shoppingCartRepository.findById(cartId)
+                .orElseThrow(() -> new ShoppingCartNotFoundException("Shopping cart not found"));
 
-    public ShoppingCart convertDTOToEntity(ShoppingCartDTO shoppingCartDTO) {
-        ShoppingCart shoppingCart = new ShoppingCart();
-        shoppingCart.setCartId(shoppingCartDTO.getCartId());
-
-        // Set user entity from UserDTO
-        userService.findById(shoppingCartDTO.getUserId()).ifPresent(userDTO -> {
-            User user = userService.convertDTOToEntity(userDTO); // Convert UserDTO to User before setting
-            shoppingCart.setUser(user);
-        });
-
-        // Set cart items from CartItemDTO list
-        List<CartItem> cartItems = shoppingCartDTO.getItems().stream()
-                .map(cartItemService::convertDTOToCartItem)
-                .collect(Collectors.toList());
-        shoppingCart.setItems(cartItems);
-
-        return shoppingCart;
+        shoppingCart.checkout();
+        ShoppingCart checkedOutCart = shoppingCartRepository.save(shoppingCart);
+        return convertToDto(checkedOutCart);
     }
 
+    private ShoppingCart convertToEntity(ShoppingCartDTO shoppingCartDTO) {
+        return modelMapper.map(shoppingCartDTO, ShoppingCart.class);
+    }
+
+    private ShoppingCartDTO convertToDto(ShoppingCart shoppingCart) {
+        return modelMapper.map(shoppingCart, ShoppingCartDTO.class);
+    }
 }
 
 
 
 //package com.application.nothing.service;
 //
-//import com.application.nothing.dto.CartItemDTO;
-//import com.application.nothing.dto.ShoppingCartDTO;
-//import com.application.nothing.dto.UserDTO;
+//import com.application.nothing.dto.*;
+//import com.application.nothing.exception.ShoppingCartAlreadyExistsException;
+//import com.application.nothing.exception.ShoppingCartNotFoundException;
+//import com.application.nothing.exception.UserNotFoundException;
 //import com.application.nothing.model.CartItem;
 //import com.application.nothing.model.ShoppingCart;
 //import com.application.nothing.model.User;
 //import com.application.nothing.repository.ShoppingCartRepository;
 //import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.context.annotation.Lazy;
 //import org.springframework.stereotype.Service;
 //
 //import java.util.List;
@@ -180,34 +139,88 @@ public class ShoppingCartService {
 //    @Autowired
 //    private ShoppingCartRepository shoppingCartRepository;
 //
-//    // Additional services needed for conversion methods
 //    @Autowired
 //    private UserService userService;
 //
 //    @Autowired
-//    private CartItemService cartItemService;
+//    //private CartItemService cartItemService;
 //
-//    public List<ShoppingCart> findAll() {
-//        return shoppingCartRepository.findAll();
+//    private final CartItemService cartItemService;
+//
+//    @Autowired
+//    public ShoppingCartService(@Lazy CartItemService cartItemService) {
+//        this.cartItemService = cartItemService;
 //    }
 //
-//    public Optional<ShoppingCart> findById(Long id) {
-//        return shoppingCartRepository.findById(id);
+//    public List<ShoppingCartDTO> findAll() {
+//        return shoppingCartRepository.findAll().stream()
+//                .map(this::convertEntityToDTO)
+//                .collect(Collectors.toList());
 //    }
 //
-//    public ShoppingCart save(ShoppingCart shoppingCart) {
-//        return shoppingCartRepository.save(shoppingCart);
+//    public Optional<ShoppingCartDTO> getShoppingCart(Long cartId) {
+//        ShoppingCart shoppingCart = shoppingCartRepository.findById(cartId)
+//                .orElseThrow(() -> new ShoppingCartNotFoundException("Shopping Cart not found with ID: " + cartId));
+//        return Optional.ofNullable(convertEntityToDTO(shoppingCart));
 //    }
 //
-//    public void deleteById(Long id) {
-//        shoppingCartRepository.deleteById(id);
+//    public void checkIfCartExists(Long userId) {
+//        if (shoppingCartRepository.existsByuser_userId(userId)) {
+//            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
+//        }
 //    }
 //
-//    public boolean existsById(Long id) {
-//        return shoppingCartRepository.existsById(id);
+////    public ShoppingCartDTO createNewShoppingCart(Long userId, ShoppingCartDTO shoppingCartDTO) {
+////        // Check if a shopping cart already exists for the given user ID
+////        if (shoppingCartRepository.existsByuser_userId(userId)) {
+////            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
+////        }
+////
+////        ShoppingCart shoppingCart = convertDTOToEntity(shoppingCartDTO);
+////        shoppingCart.setUser(userService.findById(userId));
+////        ShoppingCart savedShoppingCart = shoppingCartRepository.save(shoppingCart);
+////        return convertEntityToDTO(savedShoppingCart);
+////    }
+////
+////    public void checkIfCartExists(Long userId) {
+////        if (shoppingCartRepository.existsByuser_userId(userId)) {
+////            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
+////        }
+////    }
+//
+//    public ShoppingCartDTO createNewShoppingCart(Long userId, ShoppingCartDTO shoppingCartDTO) {
+//        // Check if a shopping cart already exists for the given user ID
+//        if (shoppingCartRepository.existsByuser_userId(userId)) {
+//            throw new ShoppingCartAlreadyExistsException("Shopping Cart already exists for user ID: " + userId);
+//        }
+//
+//        ShoppingCart shoppingCart = convertDTOToEntity(shoppingCartDTO);
+//        userService.findById(userId).ifPresent(userDTO -> {
+//            User user = userService.convertDTOToEntity(userDTO);
+//            shoppingCart.setUser(user);
+//        });
+//        ShoppingCart savedShoppingCart = shoppingCartRepository.save(shoppingCart);
+//        return convertEntityToDTO(savedShoppingCart);
 //    }
 //
-//    // Convert ShoppingCart entity to ShoppingCartDTO
+//    public ShoppingCartDTO addItemToCart(CreateCartItemRequest createCartItemRequest) {
+//        // Logic for adding item to cart
+//        // ...
+//        return null; // Replace with actual implementation
+//    }
+//
+//    public ShoppingCartDTO removeItemFromCart(RemoveCartItemRequest removeCartItemRequest) {
+//        // Logic for removing item from cart
+//        // ...
+//        return null; // Replace with actual implementation
+//    }
+//
+//    public ShoppingCartDTO updateShoppingCart(UpdateShoppingCartRequest updateShoppingCartRequest) {
+//        // Logic for updating shopping cart
+//        // ...
+//        return null; // Replace with actual implementation
+//    }
+//
 //    public ShoppingCartDTO convertEntityToDTO(ShoppingCart shoppingCart) {
 //        ShoppingCartDTO shoppingCartDTO = new ShoppingCartDTO();
 //        shoppingCartDTO.setCartId(shoppingCart.getCartId());
@@ -216,17 +229,38 @@ public class ShoppingCartService {
 //        return shoppingCartDTO;
 //    }
 //
-//    // Convert ShoppingCartDTO to ShoppingCart entity
+////    public ShoppingCart convertDTOToEntity(ShoppingCartDTO shoppingCartDTO) {
+////        ShoppingCart shoppingCart = new ShoppingCart();
+////        shoppingCart.setCartId(shoppingCartDTO.getCartId());
+////
+////        // Set user entity from UserDTO
+////        Optional<UserDTO> userDTOOptional = userService.findById(shoppingCartDTO.getUserId());
+////        if (userDTOOptional.isPresent()) {
+////            UserDTO userDTO = userDTOOptional.get();
+////            User user = userService.convertDTOToEntity(userDTO);
+////            shoppingCart.setUser(user);
+////
+////        } else {
+////            throw new UserNotFoundException("User not found with ID: " + shoppingCartDTO.getUserId());
+////        }
+////        // Set cart items from CartItemDTO list
+////        List<CartItem> cartItems = shoppingCartDTO.getItems().stream()
+////                .map(cartItemService::convertDTOToCartItem)
+////                .collect(Collectors.toList());
+////        shoppingCart.setItems(cartItems);
+////
+////        return shoppingCart;
+////    }
+//
 //    public ShoppingCart convertDTOToEntity(ShoppingCartDTO shoppingCartDTO) {
 //        ShoppingCart shoppingCart = new ShoppingCart();
 //        shoppingCart.setCartId(shoppingCartDTO.getCartId());
 //
 //        // Set user entity from UserDTO
-//        UserDTO userDTO = userService.findById(shoppingCartDTO.getUserId()).orElse(null);
-//        if (userDTO != null) {
-//            User user = userService.convertDTOToEntity(userDTO);
+//        userService.findById(shoppingCartDTO.getUserId()).ifPresent(userDTO -> {
+//            User user = userService.convertDTOToEntity(userDTO); // Convert UserDTO to User before setting
 //            shoppingCart.setUser(user);
-//        }
+//        });
 //
 //        // Set cart items from CartItemDTO list
 //        List<CartItem> cartItems = shoppingCartDTO.getItems().stream()
@@ -236,6 +270,5 @@ public class ShoppingCartService {
 //
 //        return shoppingCart;
 //    }
+//
 //}
-
-

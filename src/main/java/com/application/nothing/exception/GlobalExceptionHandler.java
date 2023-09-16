@@ -1,5 +1,6 @@
 package com.application.nothing.exception;
 
+import com.application.nothing.dto.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -34,6 +35,25 @@ public class GlobalExceptionHandler {
 
     // You can add more exception handlers here for other types of exceptions
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidInputException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInvalidInputException(InvalidInputException ex) {
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    // ... other exception handlers can be added here
+
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ErrorResponseDTO> handleGeneralException(Exception ex) {
+//        ErrorResponseDTO errorResponse = new ErrorResponseDTO("An unexpected error occurred");
+//        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     @ResponseBody

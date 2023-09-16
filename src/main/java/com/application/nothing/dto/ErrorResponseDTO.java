@@ -1,18 +1,17 @@
 package com.application.nothing.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ErrorResponseDTO {
 
     private String errorMessage;
 
-    public ErrorResponseDTO(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
 
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
 }

@@ -1,38 +1,43 @@
 package com.application.nothing.dto;
 
-import com.application.nothing.model.User;
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class OrderDTO {
 
     private Long orderId;
-    private User user;
-    private Float totalPrice;
-    private String status;
-    private Date createdAt;
+
+    @NotNull(message = "User ID cannot be null")
+    private Long userId;  // Assuming that we'll map the user ID from the User entity
+
+    @NotNull(message = "Total price cannot be null")
+    private BigDecimal totalPrice;
+
+    @NotNull(message = "Order status cannot be null")
+    private OrderStatus status;  // Using the same enum type as in the Order entity
+
+    @NotNull(message = "Order Created date cannot be null")
+    private LocalDateTime createdAt;
+
+    @NotNull(message = "Order Shipped date cannot be null")
     private LocalDateTime shippedAt;
 
-    // Getters and setters
-    // ...
 
-    @Override
-    public String toString() {
-        return "OrderDTO{" +
-                "orderId=" + orderId +
-                ", user=" + user +
-                ", totalPrice=" + totalPrice +
-                ", status='" + status + '\'' +
-                ", createdAt=" + createdAt +
-                ", shippedAt=" + shippedAt +
-                '}';
-    }
+    // Additional methods if any
+
 }
+enum OrderStatus {
+    PENDING,
+    SHIPPED,
+    DELIVERED,
+    CANCELLED;
+}
+
 

@@ -5,11 +5,14 @@ import com.application.nothing.exception.UserAlreadyExistsException;
 import com.application.nothing.exception.UserNotFoundException;
 import com.application.nothing.model.User;
 import com.application.nothing.repository.UserRepository;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -22,94 +25,58 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     public List<UserDTO> findAll() {
         return userRepository.findAll().stream()
-                .map(this::convertEntityToDTO)
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
     public Optional<UserDTO> findById(Long id) {
         return userRepository.findById(id)
-                .map(this::convertEntityToDTO); // convertToDTO is a method that converts User to UserDTO
+                .map(this::convertToDto);
     }
 
-
-    //    public UserDTO save(UserDTO userDTO) {
-//        if (userRepository.existsByEmail(userDTO.getEmail())) {
-//            throw new UserAlreadyExistsException("User with email " + userDTO.getEmail() + " already exists");
-//        }
-//        User user = convertToEntity(userDTO);
-//        User savedUser = userRepository.save(user);
-//        return convertToDTO(savedUser);
-//    }
     public UserDTO save(UserDTO userDTO) {
-        // Check if a user with the same userName, email, or phone already exists
-        userRepository.findByUsername(userDTO.getUsername()).ifPresent(existingUser -> {
-            if (!existingUser.getUserId().equals(userDTO.getUserId())) {
-                throw new UserAlreadyExistsException("A user with this username already exists");
-            }
-        });
-        userRepository.findByEmail(userDTO.getEmail()).ifPresent(existingUser -> {
-            if (!existingUser.getUserId().equals(userDTO.getUserId())) {
-                throw new UserAlreadyExistsException("A user with this email already exists");
-            }
-        });
-        userRepository.findByPhone(userDTO.getPhone()).ifPresent(existingUser -> {
-            if (!existingUser.getUserId().equals(userDTO.getUserId())) {
-                throw new UserAlreadyExistsException("A user with this phone number already exists");
-            }
-        });
+        if (userRepository.existsByEmail(userDTO.getEmail())) {
+            logger.error("User creation failed. A user with email {} already exists", userDTO.getEmail());
+            throw new UserAlreadyExistsException("A user with this email already exists");
+        }
 
-        // Convert DTO to entity and save it
-        User user = convertDTOToEntity(userDTO);
+        logger.info("Creating new user with details: {}", userDTO);
+        User user = convertToEntity(userDTO);
         User savedUser = userRepository.save(user);
-
-        // Convert saved entity back to DTO and return it
-        return convertEntityToDTO(savedUser);
+        logger.info("User created successfully with ID: {}", savedUser.getUserId());
+        return convertToDto(savedUser);
     }
-
 
     public void deleteById(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("User with ID " + id + " not found");
+            throw new UserNotFoundException("No user found with this ID");
         }
         userRepository.deleteById(id);
     }
 
-//    private UserDTO convertToDTO(User user) {
-//        UserDTO userDTO = new UserDTO();
-//        userDTO.setUserId(user.getUserId());
-//        userDTO.setUsername(user.getUsername());
-//        userDTO.setEmail(user.getEmail());
-//        // ... (other fields)
-//        return userDTO;
-//    }
-//
-//    private User convertToEntity(UserDTO userDTO) {
-//        User user = new User();
-//        user.setUserId(userDTO.getUserId());
-//        user.setUsername(userDTO.getUsername());
-//        user.setEmail(userDTO.getEmail());
-//        // ... (other fields)
-//        return user;
-//    }
+    public UserDTO login(String email, String password) {
+        User user = userRepository.findByEmailAndPassword(email, password)
+                .orElseThrow(() -> new UserNotFoundException("Invalid email or password"));
 
-    public User convertDTOToEntity(UserDTO userDTO) {
-        User user = new User();
-        user.setUserId(userDTO.getUserId());
-        user.setUsername(userDTO.getUsername());
-        user.setEmail(userDTO.getEmail());
-        // ... (other fields)
-        return user;
+        // Update the lastLogin attribute with the current date and time
+        user.setLastLogin(new Date());
+        userRepository.save(user);
+
+        logger.info("User with email {} logged in at {}", email, user.getLastLogin());
+        return convertToDto(user);
     }
 
-    private UserDTO convertEntityToDTO(User user) {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setUserId(user.getUserId());
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        // ... (other fields)
-        return userDTO;
+    private User convertToEntity(UserDTO userDTO) {
+        return modelMapper.map(userDTO, User.class);
+    }
+
+    private UserDTO convertToDto(User user) {
+        return modelMapper.map(user, UserDTO.class);
     }
 }
 

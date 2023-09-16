@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -22,7 +24,8 @@ public class ProductDTO {
     private String description;
 
     @NotNull(message = "Product price is required")
-    private Double price;
+//    private Double price;
+    private BigDecimal price;
 
     private Date createdDate;
 

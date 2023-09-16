@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
+    Optional<User> findByEmailAndPassword(String email, String password);
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmail(String email);
     List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);

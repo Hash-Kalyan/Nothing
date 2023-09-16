@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "cart_items")
 @Data
@@ -26,11 +28,24 @@ public class CartItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @Column(name = "price")
+//    private Double price;
+    private BigDecimal price;
+
     @Column(nullable = false)
     private Integer quantity;
 
+//    public BigDecimal getTotalPrice() {
+//        return this.product.getPrice().multiply(new BigDecimal(this.quantity));
+//    }
+
+    public BigDecimal getTotalPrice() {
+        return this.product.getPrice().multiply(BigDecimal.valueOf(this.quantity));
+    }
+
     // Getters, Setters, Constructors, equals, hashCode, and toString methods
     // Constructors
+
 
 
 }

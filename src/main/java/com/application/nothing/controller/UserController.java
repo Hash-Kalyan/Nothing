@@ -2,22 +2,17 @@ package com.application.nothing.controller;
 
 import com.application.nothing.dto.UserDTO;
 import com.application.nothing.exception.UserNotFoundException;
-import com.application.nothing.model.User;
 import com.application.nothing.service.UserService;
-import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
-
 
 @RestController
-@CrossOrigin
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -25,40 +20,46 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // Get all users
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers() {
+        logger.info("Fetching all users");
         return ResponseEntity.ok(userService.findAll());
     }
 
-    // Get user by ID
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        logger.info("Fetching user with ID: {}", id);
         return userService.findById(id)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
-    // Create new user
-    @PostMapping("/create")
-    public ResponseEntity<UserDTO> createUser(@RequestBody @Valid UserDTO userDTO) {
+    @PostMapping
+    public ResponseEntity<UserDTO> createUser(@RequestBody UserDTO userDTO) {
+        logger.info("Creating new user");
         return ResponseEntity.ok(userService.save(userDTO));
     }
 
-
-    // Update user
     @PutMapping("/{id}")
-    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody @Valid UserDTO userDTO) {
-        userDTO.setUserId(id); // Set the user ID from path variable to DTO
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody UserDTO userDTO) {
+        logger.info("Updating user with ID: {}", id);
+        userDTO.setUserId(id);
         return ResponseEntity.ok(userService.save(userDTO));
     }
 
-    // Delete user
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        logger.info("Deleting user with ID: {}", id);
         userService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserDTO> login(@RequestParam String email, @RequestParam String password) {
+        logger.info("User login attempt with email: {}", email);
+        return ResponseEntity.ok(userService.login(email, password));
+    }
 }
+
 
 

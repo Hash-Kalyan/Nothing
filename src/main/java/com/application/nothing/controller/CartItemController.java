@@ -6,6 +6,9 @@ import com.application.nothing.exception.CartItemAlreadyExistsException;
 import com.application.nothing.model.CartItem;
 import com.application.nothing.service.CartItemService;
 import com.application.nothing.exception.CartItemNotFoundException;
+import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +22,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/cart-items")
 public class CartItemController {
+
+    private static final Logger logger = LoggerFactory.getLogger(CartItemController.class);
 
     @Autowired
     private CartItemService cartItemService;
@@ -37,23 +42,30 @@ public class CartItemController {
                 .orElseThrow(() -> new CartItemNotFoundException("Cart Item not found with ID: " + id));
     }
 
+    @ApiOperation(value = "Create a new cart item")
     @PostMapping
     public ResponseEntity<?> createCartItem(@RequestBody @Valid CartItemDTO cartItemDTO) {
+        logger.info("Creating new cart item: {}", cartItemDTO);
         try {
-            return ResponseEntity.ok(cartItemService.createCartItem(cartItemDTO));
+            return ResponseEntity.status(HttpStatus.CREATED).body(cartItemService.createCartItem(cartItemDTO));
         } catch (CartItemAlreadyExistsException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponseDTO("Cart item already exists. Use update to modify quantity."));
+            logger.error("Cart item already exists: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponseDTO(e.getMessage()));
         }
     }
 
+    @ApiOperation(value = "Update cart item by ID")
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCartItem(@PathVariable Long id, @RequestBody @Valid CartItemDTO cartItemDTO) {
+        logger.info("Updating cart item with ID: {}", id);
         try {
             return ResponseEntity.ok(cartItemService.updateCartItem(id, cartItemDTO));
         } catch (CartItemNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponseDTO("Cart item not found with ID: " + id));
+            logger.error("Cart item not found: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponseDTO(e.getMessage()));
         }
     }
+
 
     // Delete a cart item by ID
     @DeleteMapping("/{id}")

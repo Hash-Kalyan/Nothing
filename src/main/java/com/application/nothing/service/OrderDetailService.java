@@ -1,17 +1,10 @@
 package com.application.nothing.service;
 
-import com.application.nothing.dto.CategoryDTO;
 import com.application.nothing.dto.OrderDetailDTO;
-import com.application.nothing.dto.ProductDTO;
-import com.application.nothing.exception.CategoryNotFoundException;
 import com.application.nothing.exception.OrderDetailNotFoundException;
-import com.application.nothing.exception.OrderNotFoundException;
-import com.application.nothing.exception.ProductNotFoundException;
-import com.application.nothing.model.Category;
-import com.application.nothing.model.Order;
 import com.application.nothing.model.OrderDetail;
-import com.application.nothing.model.Product;
 import com.application.nothing.repository.OrderDetailRepository;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,195 +23,123 @@ public class OrderDetailService {
     private OrderDetailRepository orderDetailRepository;
 
     @Autowired
-    private OrderService orderService;
-
-    @Autowired
-    private ProductService productService;
-
-    @Autowired
-    private CategoryService categoryService;
-
-    public Optional<OrderDetailDTO> findByOrderIdAndProductId(Long orderId, Long productId) {
-        return orderDetailRepository.findByOrder_orderIdAndProduct_productId(orderId, productId)
-                .map(this::convertToDTO);
-    }
-
-    public boolean existsById(Long id) {
-        return orderDetailRepository.existsById(id);
-    }
+    private ModelMapper modelMapper;
 
     public List<OrderDetailDTO> findAll() {
         return orderDetailRepository.findAll().stream()
-                .map(this::convertToDTO)
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
     public Optional<OrderDetailDTO> findById(Long id) {
         return orderDetailRepository.findById(id)
-                .map(this::convertToDTO);
+                .map(this::convertToDto);
     }
 
     public OrderDetailDTO save(OrderDetailDTO orderDetailDTO) {
         OrderDetail orderDetail = convertToEntity(orderDetailDTO);
         OrderDetail savedOrderDetail = orderDetailRepository.save(orderDetail);
-        return convertToDTO(savedOrderDetail);
+        return convertToDto(savedOrderDetail);
     }
 
     public void deleteById(Long id) {
         if (!orderDetailRepository.existsById(id)) {
-            throw new OrderDetailNotFoundException("OrderDetail with ID " + id + " not found");
+            throw new OrderDetailNotFoundException("No order detail found with this ID");
         }
         orderDetailRepository.deleteById(id);
     }
 
-    private OrderDetailDTO convertToDTO(OrderDetail orderDetail) {
-        OrderDetailDTO orderDetailDTO = new OrderDetailDTO();
-        orderDetailDTO.setOrderDetailId(orderDetail.getOrderDetailId());
-        orderDetailDTO.setOrderId(orderDetail.getOrder().getOrderId());
-        orderDetailDTO.setProductId(orderDetail.getProduct().getProductId());
-        orderDetailDTO.setQuantity(orderDetail.getQuantity());
-        orderDetailDTO.setSubTotal(orderDetail.getSubTotal());
-        return orderDetailDTO;
+    private OrderDetailDTO convertToDto(OrderDetail orderDetail) {
+        return modelMapper.map(orderDetail, OrderDetailDTO.class);
     }
 
-
-//    private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
-//        OrderDetail orderDetail = new OrderDetail();
-//        orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
-//        orderDetail.setOrder(orderService.findById(orderDetailDTO.getOrderId()).orElseThrow(
-//                () -> new OrderNotFoundException("Order with ID " + orderDetailDTO.getOrderId() + " not found"))
-//        );
-//        orderDetail.setProduct(productService.findById(orderDetailDTO.getProductId()).orElseThrow(
-//                () -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found"))
-//        );
-//        orderDetail.setQuantity(orderDetailDTO.getQuantity());
-//        orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
-//        return orderDetail;
-//    }
-
-//    private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
-//        OrderDetail orderDetail = new OrderDetail();
-//        orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
-//
-//        // Here we get the Order and Product entities from the database using the service classes
-//        orderDetail.setOrder(orderService.findEntityById(orderDetailDTO.getOrderId())
-//                .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderDetailDTO.getOrderId() + " not found")));
-//        orderDetail.setProduct(productService.findEntityById(orderDetailDTO.getProductId())
-//                .orElseThrow(() -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found")));
-//
-//        orderDetail.setQuantity(orderDetailDTO.getQuantity());
-//        orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
-//        return orderDetail;
-//    }
-
-
-//    private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
-//        OrderDetail orderDetail = new OrderDetail();
-//        orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
-//
-//        orderService.findById(orderDetailDTO.getOrderId()).ifPresent(orderDTO -> {
-//            Order order = new Order();
-//            order.setOrderId(orderDTO.getOrderId());
-//            orderDetail.setOrder(order);
-//        });
-//
-//        productService.findById(orderDetailDTO.getProductId()).ifPresent(productDTO -> {
-//            Product product = new Product();
-//            product.setProductId(productDTO.getProductId());
-//            orderDetail.setProduct(product);
-//        });
-//
-//        orderDetail.setQuantity(orderDetailDTO.getQuantity());
-//        orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
-//        return orderDetail;
-//    }
-
-//    private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
-//        OrderDetail orderDetail = new OrderDetail();
-//        orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
-//
-//        orderDetail.setOrder(orderService.findEntityById(orderDetailDTO.getOrderId())
-//                .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderDetailDTO.getOrderId() + " not found")));
-//
-//        orderDetail.setProduct(productService.getProductById(orderDetailDTO.getProductId())
-//                .orElseThrow(() -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found")));
-//
-//        orderDetail.setQuantity(orderDetailDTO.getQuantity());
-//        orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
-//        return orderDetail;
-//    }
     private OrderDetail convertToEntity(OrderDetailDTO orderDetailDTO) {
-        OrderDetail orderDetail = new OrderDetail();
-        orderDetail.setOrderDetailId(orderDetailDTO.getOrderDetailId());
-
-        orderDetail.setOrder(orderService.findEntityById(orderDetailDTO.getOrderId())
-                .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderDetailDTO.getOrderId() + " not found")));
-
-        ProductDTO productDTO = productService.getProductById(orderDetailDTO.getProductId())
-                .orElseThrow(() -> new ProductNotFoundException("Product with ID " + orderDetailDTO.getProductId() + " not found"));
-
-        Product product = new Product();
-        product.setProductId(productDTO.getProductId());
-        product.setName(productDTO.getName());
-        product.setDescription(productDTO.getDescription());
-        Long categoryId = productDTO.getCategoryId();
-        if (categoryId != null) {
-            Category category = categoryService.findById(categoryId)
-                    .map(this::convertToCategoryEntity) // Assuming you have a method to convert CategoryDTO to Category entity
-                    .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + categoryId + " not found"));
-            product.setCategory(category);
-        }
-        // Set other fields from ProductDTO to Product entity...
-
-        orderDetail.setProduct(product);
-
-        orderDetail.setQuantity(orderDetailDTO.getQuantity());
-        orderDetail.setSubTotal(orderDetailDTO.getSubTotal());
-        return orderDetail;
+        return modelMapper.map(orderDetailDTO, OrderDetail.class);
     }
-    private Category convertToCategoryEntity(CategoryDTO categoryDTO) {
-        Category category = new Category();
-        category.setCategoryId(categoryDTO.getCategoryId());
-        category.setCategoryName(categoryDTO.getCategoryName());
-        return category;
-    }
-
-
 }
-
-
 
 
 
 //package com.application.nothing.service;
 //
-//import com.application.nothing.repository.OrderDetailRepository;
+//import com.application.nothing.dto.CategoryDTO;
+//import com.application.nothing.dto.OrderDetailDTO;
+//import com.application.nothing.dto.ProductDTO;
+//import com.application.nothing.exception.CategoryNotFoundException;
+//import com.application.nothing.exception.OrderDetailNotFoundException;
+//import com.application.nothing.exception.OrderNotFoundException;
+//import com.application.nothing.exception.ProductNotFoundException;
+//import com.application.nothing.model.Category;
+//import com.application.nothing.model.Order;
 //import com.application.nothing.model.OrderDetail;
+//import com.application.nothing.model.Product;
+//import com.application.nothing.repository.OrderDetailRepository;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.stereotype.Service;
 //
 //import java.util.List;
 //import java.util.Optional;
+//import java.util.stream.Collectors;
 //
 //@Service
 //public class OrderDetailService {
 //
+//    private static final Logger logger = LoggerFactory.getLogger(OrderDetailService.class);
+//
 //    @Autowired
 //    private OrderDetailRepository orderDetailRepository;
 //
-//    public List<OrderDetail> findAll() {
-//        return orderDetailRepository.findAll();
+//    @Autowired
+//    private OrderService orderService;
+//
+//    @Autowired
+//    private ProductService productService;
+//
+//    @Autowired
+//    private CategoryService categoryService;
+//
+//    public Optional<OrderDetailDTO> findByOrderIdAndProductId(Long orderId, Long productId) {
+//        return orderDetailRepository.findByOrder_orderIdAndProduct_productId(orderId, productId)
+//                .map(this::convertToDTO);
 //    }
 //
-//    public Optional<OrderDetail> findById(Long id) {
-//        return orderDetailRepository.findById(id);
+//    public boolean existsById(Long id) {
+//        return orderDetailRepository.existsById(id);
 //    }
 //
-//    public OrderDetail save(OrderDetail orderDetail) {
-//        return orderDetailRepository.save(orderDetail);
+//    public List<OrderDetailDTO> findAll() {
+//        return orderDetailRepository.findAll().stream()
+//                .map(this::convertToDTO)
+//                .collect(Collectors.toList());
+//    }
+//
+//    public Optional<OrderDetailDTO> findById(Long id) {
+//        return orderDetailRepository.findById(id)
+//                .map(this::convertToDTO);
+//    }
+//
+//    public OrderDetailDTO save(OrderDetailDTO orderDetailDTO) {
+//        OrderDetail orderDetail = convertToEntity(orderDetailDTO);
+//        OrderDetail savedOrderDetail = orderDetailRepository.save(orderDetail);
+//        return convertToDTO(savedOrderDetail);
 //    }
 //
 //    public void deleteById(Long id) {
+//        if (!orderDetailRepository.existsById(id)) {
+//            throw new OrderDetailNotFoundException("OrderDetail with ID " + id + " not found");
+//        }
 //        orderDetailRepository.deleteById(id);
+//    }
+//
+//    private OrderDetailDTO convertToDTO(OrderDetail orderDetail) {
+//        OrderDetailDTO orderDetailDTO = new OrderDetailDTO();
+//        orderDetailDTO.setOrderDetailId(orderDetail.getOrderDetailId());
+//        orderDetailDTO.setOrderId(orderDetail.getOrder().getOrderId());
+//        orderDetailDTO.setProductId(orderDetail.getProduct().getProductId());
+//        orderDetailDTO.setQuantity(orderDetail.getQuantity());
+//        orderDetailDTO.setSubTotal(orderDetail.getSubTotal());
+//        return orderDetailDTO;
 //    }
 //}
